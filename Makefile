@@ -11,7 +11,7 @@ ruffmt:
 
 .PHONY: mypy
 mypy:
-	mypy main.py
+	mypy .
 
 .PHONY: test
 test:

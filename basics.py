@@ -1,8 +1,8 @@
 from sqlalchemy import create_engine, text
+from sqlalchemy.orm import Session
 
 
 def run():
-
     # A function-scoped engine that points to an in memory database.
     engine = create_engine("sqlite+pysqlite:///:memory:", echo=True)
 
@@ -61,6 +61,42 @@ def run():
         )
         for row in result:
             print(f"x: {row.x}  y: {row.y}")
+
+    """
+    The executemany style.
+    (Which does not support the <RETURNING> statement.)
+    
+    Triggered by providing a list of value dicts.
+    """
+    with engine.connect() as conn:
+        conn.execute(
+            text("INSERT INTO some_table (x, y) VALUES (:x, :y)"),
+            [{"x": 11, "y": 12}, {"x": 13, "y": 14}],
+        )
+        conn.commit()
+
+    """
+    Introducing the ORM SESSION instead of the CONNECTION
+    
+    The <Session> context manager closes the connection when it exits.
+    
+    Note the SQL is a read operation.
+    """
+    stmt = text("SELECT x, y FROM some_table WHERE y > :y ORDER BY x, y")
+    with Session(engine) as session:
+        result = session.execute(stmt, {"y": 6})
+        for row in result:
+            print(f"x: {row.x}  y: {row.y}")
+
+    """
+    Note the SQL is a write operation, so a commit is necessary.
+    """
+    with Session(engine) as session:
+        result = session.execute(
+            text("UPDATE some_table SET y=:y WHERE x=:x"),
+            [{"x": 9, "y": 11}, {"x": 13, "y": 15}],
+        )
+        session.commit()
 
 
 if __name__ == "__main__":
