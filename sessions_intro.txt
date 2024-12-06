@@ -1,0 +1,83 @@
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+
+"""
+Introduction to sessions.
+
+Sessions are to work with the ORM.
+The ORM works in Objects.
+A session is an intermediary and communicator with the database.
+The session is a holding zone for objects you have loaded or associated with it.
+Session provides the interface for SELECT - so that it can return and modify Objects.
+
+A session establishes a connection with its underlying database at the point it
+first needs it and holds on to that session until the session is instructed
+to commit or rollback. This is the transaction model. The spent connection is returned
+to the connection pool.
+
+The session observes and records mutations to the Python object it knows about, and flushes
+these to the database just in time, if you ask the session to do a query - so it works from
+the latest information.
+
+You can think of the session's python objects as proxies for the corresponding database rows.
+
+Objects can become detached, but it is discouraged.
+"""
+
+"""
+What follows is a sequence of increasingly realistic way to manage sessions.
+"""
+
+
+def run():
+    engine = create_engine("sqlite+pysqlite:///:memory:", echo=True)
+
+    """
+    Completely manual - note context manager drops the session on exit.
+
+    Note, the session.commit() <expires> the associated objects.
+    """
+    with Session(engine) as session:
+        session.add(someObject)
+        session.add(someOtherObject)
+        session.commit()
+
+    """
+    Framing out lifecycle for exception handling.
+    Note the explicit session.begin() inside the session context manager.
+    """
+    # verbose version of what a context manager will do
+    with Session(engine) as session:
+        session.begin()
+        try:
+            session.add(some_object)
+            session.add(some_other_object)
+        except:
+            session.rollback()
+            raise
+        else:
+            session.commit()
+
+    """
+    Getting nearer to real-world shorthand for a context managed session that copes with
+    exceptions
+    """
+    with Session(engine) as session: // drop connection on exit
+        with session.begin(): // commit OR rollback on exit
+            session.add(some_object)
+            session.add(some_other_object)
+
+    """
+    The final real-world shorthand for a context managed session that copes with
+    exceptions
+    """
+    with Session(engine) as session, session.begin():
+        session.add(some_object)
+        session.add(some_other_object)
+
+    """
+    See session_factory.py for the real-world session factory pattern.
+    """
+
+if __name__ == "__main__":
+    run()

@@ -1,0 +1,33 @@
+Session FAQ
+
+You should construct only one <sessionmaker> as a singleton.
+Think of it as configuration.
+
+Keep the session lifecycle outside of the data processing function.
+Typically establish its lifecycle at the point you anticipate data
+processing.
+
+Be clear about transactional scope.
+
+The DB transaction is not synchronised with the session lifecycle. It starts
+only when the session first communicates with the database (lazily).
+
+If you are using a framework that includes SQLAlchemy - use the framework's
+idion for session management.
+
+The typical framework usage pattern is:
+	o  create session at the start of a request
+	o  do session commits at the end of requests that mutate the db
+	o  close the session at the end of the request
+	o  set Session.expire_on_commit to false so that you can continue to
+	   use objects that have been associated with the ORM
+
+If you launch jobs in forked processes, then give the forked process a
+process scoped session.
+
+For scripts, make the session process scoped.
+
+For a GUI app where user actions trigger data processing, then make the
+session event-handler scoped.
+
+Sessions are NOT THREADSAFE.
